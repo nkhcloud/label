@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Attributes </title>
+    <style>
+        /* Reset */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* Page background */
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #1a1a2e 100%);
+            color: #dbe7ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+        }
+
+        /* Card */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.03);
+            backdrop-filter: blur(8px);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+            padding: 32px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #f8fafc;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 1px dashed rgba(148,163,184,0.12);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 200ms ease, background 200ms ease, border-color 200ms ease;
+            margin-bottom: 18px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+        }
+
+        .upload-area:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.25); }
+        .upload-area.dragover { border-color: rgba(99,102,241,0.45); box-shadow: 0 8px 30px rgba(99,102,241,0.06); }
+
+        .upload-icon { font-size: 40px; margin-bottom: 10px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.45)); }
+        .upload-text { color: #e6eefc; font-weight: 600; margin-bottom: 6px; }
+        .upload-subtext { color: #9aa9c7; font-size: 13px; }
+
+        #fileInput { display: none; }
+
+        /* Buttons */
+        button { 
+            padding:12px 16px; 
+            border-radius:10px; 
+            border:0; 
+            cursor:pointer; 
+            font-weight:600; 
+            font-size:15px; 
+            display:inline-flex; 
+            align-items:center; 
+            justify-content:center; 
+            gap:8px; 
+            transition: transform 140ms ease, filter 140ms ease; 
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg,#7c3aed 0%, #2563eb 50%, #06b6d4 100%);
+            color: white; 
+            box-shadow: 0 8px 24px rgba(37,99,235,0.3), 0 4px 12px rgba(124,58,237,0.2);
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-primary:hover { transform: translateY(-3px); }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: #cfe3ff;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover { filter: brightness(1.06); }
+
+        /* Results */
+        .results { display:none; margin-top:20px; }
+        .results.show { display:block; }
+
+        .result-item {
+            padding:16px;
+            margin-bottom:10px;
+            background: rgba(255,255,255,0.02);
+            border-radius:10px;
+            border-left:4px solid rgba(99,102,241,0.3);
+        }
+
+        .result-label { color:#94a3b8; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; }
+        .result-value { color:#f8fafc; font-weight:700; font-size:18px; display:block; margin-top:6px; }
+
+        /* Error */
+        .error { 
+            display:none; 
+            padding:12px; 
+            background: rgba(239, 68, 68, 0.1); 
+            border:1px solid rgba(239, 68, 68, 0.3); 
+            border-radius:8px; 
+            color:#fca5a5; 
+            margin-bottom:15px; 
+        }
+        .error.show { display:block; }
+
+        /* Loading */
+        .loading { display:none; text-align:center; color:#94a3b8; }
+        .loading.show { display:block; }
+
+        .spinner { 
+            display:inline-block; 
+            width:20px; 
+            height:20px; 
+            border:3px solid rgba(99,102,241,0.2); 
+            border-top-color:#6366f1; 
+            border-radius:50%; 
+            animation:spin 1s linear infinite; 
+        }
+
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* Label Details */
+        .label-details-section { margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.02); display:none; }
+        .label-details-section.show { display:block; }
+
+        .toggle-details-btn { width:100%; padding:12px; border-radius:10px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); color:#cfe3ff; font-weight:700; margin-top:10px; }
+        .toggle-details-btn:hover { background: rgba(124,58,237,0.09); }
+
+        .label-details-content { display:none; margin-top:12px; padding:12px; border-radius:8px; background: rgba(255,255,255,0.02); }
+        .label-details-content.show { display:block; }
+
+        .label-item {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:10px;
+            background:rgba(255,255,255,0.01);
+            border-radius:6px;
+            margin-bottom:6px;
+            border-left:3px solid rgba(99,102,241,0.2);
+        }
+
+        .label-name { color:#e6eefc; font-weight:600; flex:1; }
+        .label-count { color:#94a3b8; font-size:12px; font-weight:700; }
+
+        .monospace { font-family:'Courier New',monospace; font-size:12px; color:#b4d1ff; word-break:break-all; }
+
+        .detail-small { font-size:13px; color:#94a3b8; margin-top:6px; }
+
+        .arrow { display:inline-block; transition:transform 200ms ease; }
+        .arrow.rotated { transform:rotate(180deg); }
+
+        /* Range inputs area */
+        .range-inputs { display:none; margin-bottom:18px; padding:18px; background: rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.05); }
+        .range-inputs.show { display:block; }
+        .range-title { color:#e6eefc; font-weight:700; margin-bottom:12px; font-size:14px; }
+
+        .range-input-row { display:flex; gap:10px; margin-bottom:10px; }
+        .range-input-row > div { flex:1; display:flex; align-items:center; }
+        .range-input-row label { color:#94a3b8; font-size:13px; min-width:60px; }
+
+        input[type=number] { width:100%; padding:8px 10px; border-radius:8px; background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.04); color:#e6eefc; }
+        input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
+        .range-button { width:100%; margin-top:10px; background: linear-gradient(90deg,#06b6d4,#7c3aed); color:#fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Find Attributes</h1>
+        <p class="subtitle">Phân tích tệp XML để tìm labels có boxes thiếu thuộc tính hoặc chọn thừa</p>
+
+        <div id="errorDiv" class="error"></div>
+        <div id="loadingDiv" class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top:10px;">Đang xử lý...</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click();"
+             ondragover="event.preventDefault(); event.stopPropagation(); document.getElementById('uploadArea').classList.add('dragover');"
+             ondragleave="document.getElementById('uploadArea').classList.remove('dragover');"
+             ondrop="event.preventDefault(); event.stopPropagation(); document.getElementById('uploadArea').classList.remove('dragover'); handleFileSelect({target: {files: event.dataTransfer.files}});">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Chọn tệp XML hoặc ZIP</div>
+            <div class="upload-subtext">Hỗ trợ các tệp .xml và .zip</div>
+        </div>
+
+        <input type="file" id="fileInput" accept=".xml,.zip" onchange="handleFileSelect(event)">
+
+        <!-- Range inputs area -->
+        <div class="range-inputs" id="rangeInputs">
+            <div class="range-title">Chọn Khoảng Frame</div>
+            <div class="range-input-row">
+                <div>
+                    <label>Start:</label>
+                    <input type="number" id="rangeStart" min="0" placeholder="0" value="0">
+                </div>
+                <div>
+                    <label>End:</label>
+                    <input type="number" id="rangeEnd" min="0" placeholder="Cuối cùng">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-primary" id="analyzeBtn" onclick="analyzeLabelAttributes()" style="display:none;">
+            🔎 Phân Tích
+        </button>
+
+        <button class="btn-secondary" id="resetBtn" onclick="resetForm()" style="display:none;">
+            ↻ Xóa
+        </button>
+
+        <div id="resultsDiv" class="results"></div>
+
+        <div class="label-details-section" id="labelDetailsSection">
+            <button class="toggle-details-btn" id="toggleDetailsBtn" onclick="toggleLabelDetails();">
+                <span class="arrow" id="arrowIcon">▼</span>
+                <span>Xem Chi Tiết</span>
+            </button>
+            <div class="label-details-content" id="labelDetailsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentXmlData = null;
+        let labelDetailsVisible = false;
+
+        function isAttrSelected(val) {
+            if (!val && val !== 0) return false;
+            const t = String(val).trim().toLowerCase();
+            return t === 'true' || t === '1' || t === 'yes' || t === 'y';
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            
+            if (fileName.endsWith('.xml')) {
+                readXMLFile(file);
+            } else if (fileName.endsWith('.zip')) {
+                readZipFile(file);
+            } else {
+                showError('Vui lòng chọn file .xml hoặc .zip');
+            }
+        }
+
+        function readXMLFile(file) {
+            document.getElementById('loadingDiv').classList.add('show');
+            document.getElementById('errorDiv').classList.remove('show');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const xmlText = e.target.result;
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        showError('Tệp XML không hợp lệ');
+                        document.getElementById('loadingDiv').classList.remove('show');
+                        return;
+                    }
+
+                    parseXmlData(xmlDoc);
+                    document.getElementById('loadingDiv').classList.remove('show');
+                    document.getElementById('analyzeBtn').style.display = 'inline-flex';
+                    document.getElementById('resetBtn').style.display = 'inline-flex';
+                } catch (err) {
+                    showError('Lỗi: ' + err.message);
+                    document.getElementById('loadingDiv').classList.remove('show');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function readZipFile(file) {
+            document.getElementById('loadingDiv').classList.add('show');
+            document.getElementById('errorDiv').classList.remove('show');
+
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.onload = () => {
+                JSZip.loadAsync(file).then((zip) => {
+                    const xmlFile = zip.file('annotations.xml');
+                    if (!xmlFile) {
+                        document.getElementById('loadingDiv').classList.remove('show');
+                        showError('Không tìm thấy file annotations.xml trong zip');
+                        return;
+                    }
+                    xmlFile.async('text').then((content) => {
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(content, 'text/xml');
+
+                        if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                            showError('Tệp XML không hợp lệ');
+                            document.getElementById('loadingDiv').classList.remove('show');
+                            return;
+                        }
+
+                        parseXmlData(xmlDoc);
+                        document.getElementById('loadingDiv').classList.remove('show');
+                        document.getElementById('analyzeBtn').style.display = 'inline-flex';
+                        document.getElementById('resetBtn').style.display = 'inline-flex';
+                    });
+                }).catch(err => {
+                    document.getElementById('loadingDiv').classList.remove('show');
+                    showError('Lỗi khi đọc file zip: ' + err.message);
+                });
+            };
+            script.onerror = () => {
+                document.getElementById('loadingDiv').classList.remove('show');
+                showError('Không thể tải thư viện JSZip');
+            };
+            document.head.appendChild(script);
+        }
+
+        function parseXmlData(xmlDoc) {
+            currentXmlData = {
+                labelHasAttributes: {},
+                images: []
+            };
+
+            // Parse labels with schema attributes - check <name> element or name attribute
+            const labelElements = xmlDoc.getElementsByTagName('label');
+            for (let i = 0; i < labelElements.length; i++) {
+                const label = labelElements[i];
+                let name = '';
+                const nameEl = label.getElementsByTagName('name')[0];
+                if (nameEl) name = String(nameEl.textContent || '').trim();
+                if (!name) name = label.getAttribute('name') || '';
+                const attributes = label.getElementsByTagName('attribute');
+                currentXmlData.labelHasAttributes[name] = attributes.length > 0;
+            }
+
+            // Assign sequential box IDs if missing
+            const allBoxes = Array.from(xmlDoc.getElementsByTagName('box'));
+            if (allBoxes.length > 0) {
+                allBoxes.forEach((b, idx) => {
+                    try {
+                        if (!b.getAttribute('id')) {
+                            b.setAttribute('id', String(idx + 1));
+                        }
+                    } catch (e) { /* ignore */ }
+                });
+            }
+
+            // Parse images and boxes
+            const imageElements = xmlDoc.getElementsByTagName('image');
+            for (let i = 0; i < imageElements.length; i++) {
+                const image = imageElements[i];
+                const imgId = parseInt(image.getAttribute('id'));
+                const boxes = Array.from(image.getElementsByTagName('box'));
+                
+                const imgData = {
+                    id: imgId,
+                    boxes: [],
+                    totalBoxes: boxes.length,
+                    boxLabels: [],
+                    boxIds: [],
+                    boxSelectedCounts: []
+                };
+
+                boxes.forEach((box, idx) => {
+                    const label = box.getAttribute('label') || box.getAttribute('label_name') || box.getAttribute('name') || '';
+                    const boxId = box.getAttribute('id');
+                    imgData.boxLabels.push(String(label).trim());
+                    imgData.boxIds.push(boxId ? parseInt(boxId) : null);
+                    
+                    // Count selected attributes based on textContent
+                    const attributes = box.getElementsByTagName('attribute');
+                    let selectedCount = 0;
+                    for (let k = 0; k < attributes.length; k++) {
+                        const attr = attributes[k];
+                        const val = String(attr.textContent || '').trim();
+                        if (isAttrSelected(val)) selectedCount++;
+                    }
+                    imgData.boxSelectedCounts.push(selectedCount);
+
+                    imgData.boxes.push({
+                        id: boxId,
+                        label: String(label).trim(),
+                        selectedCount: selectedCount
+                    });
+                });
+
+                currentXmlData.images.push(imgData);
+            }
+
+            // Calculate min and max frame IDs
+            const ids = currentXmlData.images.map(img => img.id).filter(x => !isNaN(x));
+            
+            if (ids.length > 0) {
+                const minFrame = Math.min(...ids);
+                const maxFrame = Math.max(...ids);
+                currentXmlData.minFrame = minFrame;
+                currentXmlData.maxFrame = maxFrame;
+                
+                // Set range input min/max values
+                const rangeStart = document.getElementById('rangeStart');
+                const rangeEnd = document.getElementById('rangeEnd');
+                if (rangeStart) {
+                    rangeStart.min = minFrame;
+                    rangeStart.max = maxFrame;
+                    rangeStart.value = minFrame;
+                }
+                if (rangeEnd) {
+                    rangeEnd.min = minFrame;
+                    rangeEnd.max = maxFrame;
+                    rangeEnd.value = maxFrame;
+                    rangeEnd.placeholder = maxFrame.toString();
+                }
+            }
+
+            // Show range inputs
+            const rangeInputs = document.getElementById('rangeInputs');
+            if (rangeInputs) {
+                rangeInputs.classList.add('show');
+            }
+        }
+
+        function analyzeLabelAttributes() {
+            if (!currentXmlData) {
+                showError('Vui lòng upload file trước');
+                return;
+            }
+
+            findNoAttributeLabels();
+        }
+
+        function findNoAttributeLabels() {
+            const labelHasAttrs = currentXmlData.labelHasAttributes || {};
+
+            // Get range values with min/max validation
+            const startInput = document.getElementById('rangeStart');
+            const endInput = document.getElementById('rangeEnd');
+            let startFrame = parseInt(startInput.value) || 0;
+            let endFrame = parseInt(endInput.value) || 0;
+
+            const minFrame = (currentXmlData && typeof currentXmlData.minFrame !== 'undefined') ? currentXmlData.minFrame : null;
+            const maxFrame = (currentXmlData && typeof currentXmlData.maxFrame !== 'undefined') ? currentXmlData.maxFrame : null;
+
+            startFrame = Math.round(startFrame);
+            endFrame = Math.round(endFrame);
+
+            // Validate and adjust range
+            if (minFrame !== null && maxFrame !== null) {
+                if (startFrame < minFrame) startFrame = minFrame;
+                if (startFrame > maxFrame) startFrame = maxFrame;
+                if (endFrame < minFrame) endFrame = minFrame;
+                if (endFrame > maxFrame) endFrame = maxFrame;
+                if (startInput) startInput.value = startFrame;
+                if (endInput) endInput.value = endFrame;
+            }
+
+            if (startFrame > endFrame) {
+                showError('Frame bắt đầu không được lớn hơn frame kết thúc');
+                return;
+            }
+
+            // Build mapping: label -> { missingBoxes: [], missingFrames:Set, overBoxes: [{id,extra}], overFrames:Set }
+            const labelData = {};
+
+            currentXmlData.images.forEach((img, index) => {
+                // Apply range filter using img.id which is now numeric
+                if (img.id < startFrame || img.id > endFrame) return;
+
+                const boxes = img.boxes || [];
+                const boxLabels = img.boxLabels || [];
+                const boxIds = img.boxIds || [];
+                const boxSelectedCounts = img.boxSelectedCounts || [];
+
+                boxes.forEach((box, idx) => {
+                    const lbl = String(boxLabels[idx] || '').trim();
+                    if (!lbl) return;
+                    if (!labelHasAttrs[lbl]) return; // skip labels without attribute schema entirely
+
+                    if (!labelData[lbl]) {
+                        labelData[lbl] = { 
+                            missingBoxes: [], 
+                            missingFrames: new Set(), 
+                            overBoxes: [], 
+                            overFrames: new Set() 
+                        };
+                    }
+
+                    const selCount = boxSelectedCounts[idx] || 0;
+                    const bid = boxIds[idx];
+                    
+                    if (selCount === 0) {
+                        // Box has no selected attributes
+                        if (bid !== null && !isNaN(bid)) {
+                            labelData[lbl].missingBoxes.push(bid);
+                            labelData[lbl].missingFrames.add(img.id);
+                        }
+                    } else if (selCount > 1) {
+                        // Box has multiple selected attributes
+                        const extra = selCount - 1;
+                        if (bid !== null && !isNaN(bid)) {
+                            labelData[lbl].overBoxes.push({ id: bid, extra: extra });
+                            labelData[lbl].overFrames.add(img.id);
+                        }
+                    }
+                });
+            });
+
+            // Build detail HTML
+            const detailsContent = document.getElementById('labelDetailsContent');
+            const detailsSection = document.getElementById('labelDetailsSection');
+
+            const labels = Object.keys(labelData).sort();
+            if (labels.length === 0) {
+                detailsSection.classList.add('show');
+                detailsContent.innerHTML = '<div style="padding:8px; color:#94a3b8;">Không tìm thấy label nào thiếu thuộc tính hoặc chọn thừa (chỉ kiểm tra labels có thuộc tính) trong khoảng đã chọn.</div>';
+                if (!labelDetailsVisible) toggleLabelDetails();
+                return;
+            }
+
+            // Calculate statistics
+            let totalMissingBoxes = 0;
+            let totalOverBoxes = 0;
+            let missingFramesSet = new Set();
+            let overFramesSet = new Set();
+
+            labels.forEach(lbl => {
+                const data = labelData[lbl];
+                totalMissingBoxes += data.missingBoxes.length;
+                totalOverBoxes += data.overBoxes.reduce((s, e) => s + e.extra, 0);
+                data.missingFrames.forEach(f => missingFramesSet.add(f));
+                data.overFrames.forEach(f => overFramesSet.add(f));
+            });
+
+            // Display statistics
+            let html = `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+                    <div style="padding:10px; background:rgba(255,180,180,0.1); border-radius:8px; border-left:3px solid #ffb4b4;">
+                        <div style="font-size:12px; color:#ffb4b4; font-weight:700; margin-bottom:4px;">MISSING BOXES</div>
+                        <div style="font-size:18px; color:#fca5a5; font-weight:700;">${totalMissingBoxes}</div>
+                    </div>
+                    <div style="padding:10px; background:rgba(255,213,128,0.1); border-radius:8px; border-left:3px solid #ffd580;">
+                        <div style="font-size:12px; color:#ffd580; font-weight:700; margin-bottom:4px;">EXTRA BOXES</div>
+                        <div style="font-size:18px; color:#ffd580; font-weight:700;">${totalOverBoxes}</div>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+                    <div style="padding:10px; background:rgba(107,114,128,0.1); border-radius:8px; border-left:3px solid #6b7280;">
+                        <div style="font-size:12px; color:#9ca3af; font-weight:700; margin-bottom:4px;">FRAMES WITH MISSING</div>
+                        <div style="font-size:18px; color:#d1d5db; font-weight:700;">${missingFramesSet.size}</div>
+                    </div>
+                    <div style="padding:10px; background:rgba(107,114,128,0.1); border-radius:8px; border-left:3px solid #6b7280;">
+                        <div style="font-size:12px; color:#9ca3af; font-weight:700; margin-bottom:4px;">FRAMES WITH EXTRA</div>
+                        <div style="font-size:18px; color:#d1d5db; font-weight:700;">${overFramesSet.size}</div>
+                    </div>
+                </div>
+                <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:12px; margin-top:12px;">
+            `;
+
+            let html2 = '';
+            labels.forEach(lbl => {
+                const data = labelData[lbl];
+                const missingCount = data.missingBoxes.length;
+                const overCount = data.overBoxes.reduce((s, e) => s + e.extra, 0);
+                const missingFramesArr = Array.from(data.missingFrames).sort((a,b)=>a-b);
+                const overFramesArr = Array.from(data.overFrames).sort((a,b)=>a-b);
+
+                html2 += `<div style="margin-top:10px; padding:8px; border-radius:8px; background: rgba(255,255,255,0.01);">`;
+                html2 += `<div style="font-weight:700; margin-bottom:6px; color:#e6eefc;">${lbl} — missing: ${missingCount}, extra: ${overCount}</div>`;
+
+                if (missingCount > 0) {
+                    html2 += `<div style="margin-bottom:6px;"><strong style="color:#ffb4b4;">Missing box IDs</strong>: <span class="monospace">${data.missingBoxes.join(', ')}</span></div>`;
+                    html2 += `<div style="margin-bottom:6px;"><strong style="color:#ffb4b4;">Frames with missing</strong>: <span class="monospace">${missingFramesArr.join(', ')}</span></div>`;
+                } else {
+                    html2 += `<div style="margin-bottom:6px; color:#94a3b8;">No missing boxes</div>`;
+                }
+
+                if (data.overBoxes.length > 0) {
+                    const overLines = data.overBoxes.map(o => `${o.id}${o.extra > 1 ? `(+${o.extra})` : ''}`);
+                    html2 += `<div style="margin-bottom:6px;"><strong style="color:#ffd580;">Over-selected boxes (id[+extra])</strong>: <span class="monospace">${overLines.join(', ')}</span></div>`;
+                    html2 += `<div style="margin-bottom:6px;"><strong style="color:#ffd580;">Frames with over-selected</strong>: <span class="monospace">${overFramesArr.join(', ')}</span></div>`;
+                } else {
+                    html2 += `<div style="margin-bottom:6px; color:#94a3b8;">No over-selected boxes</div>`;
+                }
+
+                html2 += `</div>`;
+            });
+
+            detailsSection.classList.add('show');
+            detailsContent.innerHTML = html + html2 + `</div>`;
+            if (!labelDetailsVisible) toggleLabelDetails();
+        }
+
+        function toggleLabelDetails() {
+            const content = document.getElementById('labelDetailsContent');
+            const arrow = document.getElementById('arrowIcon');
+            
+            labelDetailsVisible = !labelDetailsVisible;
+            
+            if (labelDetailsVisible) {
+                content.classList.add('show');
+                arrow.classList.add('rotated');
+            } else {
+                content.classList.remove('show');
+                arrow.classList.remove('rotated');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorDiv');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+        }
+
+        function resetForm() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('resultsDiv').classList.remove('show');
+            document.getElementById('errorDiv').classList.remove('show');
+            document.getElementById('loadingDiv').classList.remove('show');
+            document.getElementById('analyzeBtn').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('labelDetailsSection').classList.remove('show');
+            document.getElementById('rangeInputs').classList.remove('show');
+            document.getElementById('rangeStart').value = '0';
+            document.getElementById('rangeEnd').value = '';
+            currentXmlData = null;
+            labelDetailsVisible = false;
+        }
+    </script>
+</body>
+</html>
