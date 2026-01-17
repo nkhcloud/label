@@ -195,8 +195,6 @@
 <body>
     <div class="container">
         <h1>🔍 Find Attributes</h1>
-        <p class="subtitle">Phân tích tệp XML để tìm labels có boxes thiếu thuộc tính hoặc chọn thừa</p>
-
         <div id="errorDiv" class="error"></div>
         <div id="loadingDiv" class="loading">
             <div class="spinner"></div>
@@ -220,11 +218,11 @@
             <div class="range-input-row">
                 <div>
                     <label>Start:</label>
-                    <input type="number" id="rangeStart" min="0" placeholder="0" value="0">
+                    <input type="number" id="rangeStart" min="0" placeholder="0" value="0" onblur="validateRangeStart()">
                 </div>
                 <div>
                     <label>End:</label>
-                    <input type="number" id="rangeEnd" min="0" placeholder="Cuối cùng">
+                    <input type="number" id="rangeEnd" min="0" placeholder="Cuối cùng" onblur="validateRangeEnd()">
                 </div>
             </div>
         </div>
@@ -251,6 +249,38 @@
     <script>
         let currentXmlData = null;
         let labelDetailsVisible = false;
+
+        function validateRangeStart() {
+            const startInput = document.getElementById('rangeStart');
+            const minFrame = (currentXmlData && typeof currentXmlData.minFrame !== 'undefined') ? currentXmlData.minFrame : null;
+            const maxFrame = (currentXmlData && typeof currentXmlData.maxFrame !== 'undefined') ? currentXmlData.maxFrame : null;
+            
+            if (minFrame === null || maxFrame === null) return;
+            
+            let value = parseInt(startInput.value) || minFrame;
+            
+            if (value < minFrame) {
+                startInput.value = minFrame;
+            } else if (value > maxFrame) {
+                startInput.value = minFrame;
+            }
+        }
+
+        function validateRangeEnd() {
+            const endInput = document.getElementById('rangeEnd');
+            const minFrame = (currentXmlData && typeof currentXmlData.minFrame !== 'undefined') ? currentXmlData.minFrame : null;
+            const maxFrame = (currentXmlData && typeof currentXmlData.maxFrame !== 'undefined') ? currentXmlData.maxFrame : null;
+            
+            if (minFrame === null || maxFrame === null) return;
+            
+            let value = parseInt(endInput.value) || maxFrame;
+            
+            if (value < minFrame) {
+                endInput.value = maxFrame;
+            } else if (value > maxFrame) {
+                endInput.value = maxFrame;
+            }
+        }
 
         function isAttrSelected(val) {
             if (!val && val !== 0) return false;
